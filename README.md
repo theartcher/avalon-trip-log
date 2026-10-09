@@ -18,6 +18,10 @@ aisstream only streams live data, so the log starts from the first run. Avalon o
 
 GitHub pauses scheduled workflows after 60 days without repo activity. The workflow commits a heartbeat to `data/status.json` at least weekly, so it keeps running even if Avalon goes quiet.
 
+## Backfilling recent history
+
+aisstream has no history, but [VesselAPI](https://vesselapi.com)'s free tier (150 calls a month, no card) keeps about 31 days of positions. To use it, sign up there, add the key as an Actions secret named `VESSELAPI_KEY`, then run **Backfill Avalon history** from the Actions tab with the number of days you want. Each call returns up to 50 positions, and a run stops after `max_calls` calls (20 by default) so it can't use up the month's quota. The positions it finds are merged into `data/positions.csv` in time order.
+
 ## Running locally
 
 ```sh

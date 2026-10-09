@@ -1,0 +1,54 @@
+name: Backfill Avalon history
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days of history to fetch (1-31)"
+        default: "1"
+        required: true
+      max_calls:
+        description: "Max VesselAPI calls this run (free tier: 150 per month, 50 positions each)"
+        default: "20"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect-positions
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch history from VesselAPI
+        env:
+          VESSELAPI_KEY: ${{ secrets.VESSELAPI_KEY }}
+          DAYS: ${{ inputs.days }}
+          MAX_CALLS: ${{ inputs.max_calls }}
+        run: python scripts/backfill.py
+
+      - name: Commit backfilled positions
+        run: |
+          if git diff --quiet -- data && [ -z "$(git ls-files --others --exclude-standard data)" ]; then
+            echo "Nothing new."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "Backfill ${{ inputs.days }} day(s) of Avalon history"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
