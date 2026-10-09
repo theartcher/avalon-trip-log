@@ -140,6 +140,26 @@ def append_rows(rows):
         writer.writerows(rows)
 
 
+def rewrite_merged(new_rows):
+    """Merge new_rows into the whole log in time order, thinning to one row per MIN_ROW_INTERVAL.
+
+    Used for backfills, whose rows can be older than what is already logged.
+    Returns how many rows the log grew by.
+    """
+    existing = read_rows()
+    merged = []
+    for row in sorted(existing + new_rows, key=lambda r: r["timestamp_utc"]):
+        if merged and parse_iso(row["timestamp_utc"]) - parse_iso(merged[-1]["timestamp_utc"]) < MIN_ROW_INTERVAL:
+            continue
+        merged.append({k: row.get(k, "") for k in FIELDS})
+    POSITIONS_CSV.parent.mkdir(parents=True, exist_ok=True)
+    with POSITIONS_CSV.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(merged)
+    return len(merged) - len(existing)
+
+
 def update_status(added, now):
     status = json.loads(STATUS_JSON.read_text()) if STATUS_JSON.exists() else {}
     last_heartbeat = status.get("last_heartbeat_utc")
