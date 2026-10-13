@@ -64,7 +64,14 @@
         entries.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     }
 
-    fetch(`data/positions.csv?t=${Date.now()}`)
+    // On GitHub Pages the log comes from the repo's `data` branch; locally from ./data.
+    const [owner] = location.hostname.split(".");
+    const repo = location.pathname.split("/")[1];
+    const dataUrl = location.hostname.endsWith(".github.io")
+      ? `https://raw.githubusercontent.com/${owner}/${repo}/data/positions.csv`
+      : "data/positions.csv";
+
+    fetch(`${dataUrl}?t=${Date.now()}`)
       .then((r) => (r.ok ? r.text() : ""))
       .catch(() => "")
       .then((text) => {
