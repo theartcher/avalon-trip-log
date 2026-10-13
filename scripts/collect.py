@@ -149,6 +149,7 @@ def update_status(added, now):
     status["last_heartbeat_utc"] = iso(now)
     if added:
         status["last_new_position_utc"] = iso(now)
+    STATUS_JSON.parent.mkdir(parents=True, exist_ok=True)
     STATUS_JSON.write_text(json.dumps(status, indent=2) + "\n")
 
 
