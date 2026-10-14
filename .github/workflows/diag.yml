@@ -1,0 +1,17 @@
+name: Diagnose aisstream (temporary)
+on:
+  push:
+    branches: [diag-aisstream]
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install websockets==15.0.1
+      - env:
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+        run: python scripts/diag.py
