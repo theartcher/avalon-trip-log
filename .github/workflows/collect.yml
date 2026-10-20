@@ -26,21 +26,32 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # The log lives on the `data` branch: main only accepts pull requests.
+      - name: Check out the data branch
+        run: |
+          if git ls-remote --exit-code --heads origin data >/dev/null; then
+            git fetch --depth 1 origin data
+            git worktree add -B data logbook FETCH_HEAD
+          else
+            git worktree add --orphan -b data logbook
+          fi
+
       - name: Listen to aisstream
         env:
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
           LISTEN_SECONDS: "240"
+          DATA_DIR: logbook
         run: python scripts/collect.py
 
       - name: Commit new positions
+        working-directory: logbook
         run: |
-          if git diff --quiet -- data && [ -z "$(git ls-files --others --exclude-standard data)" ]; then
+          git add -A
+          if git diff --cached --quiet; then
             echo "No new positions."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data
           git commit -m "Log Avalon positions $(date -u +%Y-%m-%dT%H:%MZ)"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin HEAD:data

@@ -6,6 +6,7 @@ Environment:
   AISSTREAM_API_KEY  required, the aisstream.io API key
   MMSI               vessel to track (default 244000052, the motor yacht Avalon)
   LISTEN_SECONDS     how long to listen per run (default 240)
+  DATA_DIR           where positions.csv and status.json live (default ./data)
 """
 
 import asyncio
@@ -21,8 +22,10 @@ import websockets
 
 STREAM_URL = "wss://stream.aisstream.io/v0/stream"
 ROOT = Path(__file__).resolve().parent.parent
-POSITIONS_CSV = ROOT / "data" / "positions.csv"
-STATUS_JSON = ROOT / "data" / "status.json"
+# The workflow points DATA_DIR at a checkout of the `data` branch, since main only accepts PRs.
+DATA_DIR = Path(os.environ.get("DATA_DIR") or ROOT / "data")
+POSITIONS_CSV = DATA_DIR / "positions.csv"
+STATUS_JSON = DATA_DIR / "status.json"
 
 FIELDS = ["timestamp_utc", "lat", "lon", "sog_kn", "cog", "heading", "nav_status", "message_type", "ship_name"]
 POSITION_TYPES = ["PositionReport", "StandardClassBPositionReport", "ExtendedClassBPositionReport"]
